@@ -9,7 +9,7 @@ variables:
   IMAGE_NAME: 'nginx-custom'
   REGISTRY: 'acr0987.azurecr.io'
   KUBECONFIG: '/home/learning/.kube/config'
-  ACR_USERName: 'acr0987' 
+ 
 
 
 stages:
