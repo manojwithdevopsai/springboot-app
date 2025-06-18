@@ -1,47 +1,42 @@
-# Docker
-# Build a Docker image
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
 trigger:
 - main
 
-resources:
-- repo: self
+pool:
+  name: 'test-project' # Use your self-hosted agent pool
 
 variables:
-  tag: '$(Build.BuildId)'
+  IMAGE_NAME: 'myapp'
+  REGISTRY: 'acr0987.azurecr.io'
+  KUBECONFIG: '/home/learning/.kube/config'
 
 stages:
 - stage: Build
-  displayName: Build image
   jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: ubuntu-latest
+  - job: BuildPush
     steps:
-    - task: Maven@4
-      inputs:
-        mavenPomFile: 'pom.xml'
-        goals: 'install'
-        publishJUnitResults: true
-        testResultsFiles: '**/surefire-reports/TEST-*.xml'
-        javaHomeOption: 'JDKVersion'
-        mavenVersionOption: 'Default'
-        mavenAuthenticateFeed: false
-        effectivePomSkip: false
-        sonarQubeRunAnalysis: false
+    - checkout: self
+
     - task: Docker@2
-      displayName: Build an image
       inputs:
-        command: build
-        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        repository: $(imageName)
+        containerRegistry: 'acr'
+        repository: '$(IMAGE_NAME)'
+        command: 'buildAndPush'
+        Dockerfile: '**/Dockerfile'
         tags: |
-          $(tag)
-    - task: ArtifactoryDocker@1
-      inputs:
-        command: 'push'
-        artifactoryService: 'Art_SVC_conn'
-        targetRepo: 'docker-local'
-        imageName: '$(imageName):$(tag)'
+          latest
+
+- stage: Deploy
+  jobs:
+  - job: DeployToMinikube
+    steps:
+    - script: |
+        echo "Using Minikube context"
+        kubectl config use-context minikube
+        kubectl get nodes
+      displayName: 'Set Minikube Context'
+
+    - script: |
+        echo "Deploying to Minikube"
+        kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
+      displayName: 'Deploy to Minikube'
