@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: my-springboot-app
-        image: acr0987.azurecr.io/acr0987:latest
+        image: manojsavukar/test:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8085
@@ -28,11 +28,12 @@ metadata:
     k8s-app: springboot-app
   name: springboot-app
 spec:
+  type: NodePort
   ports:
   - name: http
     port: 80
     protocol: TCP
     targetPort: 8085
-  type: LoadBalancer
+    nodePort: 30080  # Optional: choose a port in range 30000-32767
   selector:
     app: springboot-app
